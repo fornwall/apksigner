@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project default="create_run_jar" name="Create runnable jar">
+	<target name="create_run_jar">
+		<jar destfile="zipsigner.jar" filesetmanifest="mergewithoutmain">
+			<manifest>
+				<attribute name="Main-Class" value="kellinwood.zipsigner.cmdline.Main" />
+				<attribute name="Class-Path" value="." />
+			</manifest>
+			<fileset dir="bin/" />
+			<zipfileset excludes="META-INF/*.SF" src="lib/core-1.51.0.0.jar" />
+			<zipfileset excludes="META-INF/*.SF" src="lib/pkix-1.51.0.0.jar" />
+			<zipfileset excludes="META-INF/*.SF" src="lib/prov-1.51.0.0.jar" />
+			<zipfileset excludes="META-INF/*.SF" src="lib/commons-cli-1.2.jar" />
+		</jar>
+	</target>
+</project>
