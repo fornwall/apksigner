@@ -34,13 +34,4 @@ public class Base64 {
 		return new String(baos.toByteArray());
 	}
 
-	public static byte[] decode(String data) {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		try {
-			new Base64Encoder().decode(data, baos);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-		return baos.toByteArray();
-	}
 }

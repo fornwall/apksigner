@@ -13,18 +13,26 @@ public final class ZipInput implements AutoCloseable {
 	int scanIterations = 0;
 
 	public final Map<String, ZioEntry> entries = new LinkedHashMap<>();
-	CentralEnd centralEnd;
+	final CentralEnd centralEnd;
 	Manifest manifest;
 
 	public ZipInput(String filename) throws IOException {
 		in = new RandomAccessFile(filename, "r");
 		fileLength = in.length();
+
+		long posEOCDR = scanForEOCDR(256);
+		in.seek(posEOCDR);
+		centralEnd = CentralEnd.read(this);
+		in.seek(centralEnd.centralStartOffset);
+
+		for (int i = 0; i < centralEnd.totalCentralEntries; i++) {
+			ZioEntry entry = new ZioEntry(this);
+			entries.put(entry.getName(), entry);
+		}
 	}
 
 	public static ZipInput read(String filename) throws IOException {
-		ZipInput zipInput = new ZipInput(filename);
-		zipInput.doRead();
-		return zipInput;
+		return new ZipInput(filename);
 	}
 
 	public Manifest getManifest() throws IOException {
@@ -47,9 +55,7 @@ public final class ZipInput implements AutoCloseable {
 		int scanSize = (int) Math.min(fileLength, size);
 
 		byte[] scanBuf = new byte[scanSize];
-
 		in.seek(fileLength - scanSize);
-
 		in.readFully(scanBuf);
 
 		for (int i = scanSize - 22; i >= 0; i--) {
@@ -60,23 +66,6 @@ public final class ZipInput implements AutoCloseable {
 		}
 
 		return scanForEOCDR(size * 2);
-	}
-
-	private void doRead() {
-		try {
-			long posEOCDR = scanForEOCDR(256);
-			in.seek(posEOCDR);
-			centralEnd = CentralEnd.read(this);
-
-			in.seek(centralEnd.centralStartOffset);
-
-			for (int i = 0; i < centralEnd.totalCentralEntries; i++) {
-				ZioEntry entry = new ZioEntry(this);
-				entries.put(entry.getName(), entry);
-			}
-		} catch (Throwable t) {
-			t.printStackTrace();
-		}
 	}
 
 	@Override
@@ -123,10 +112,6 @@ public final class ZipInput implements AutoCloseable {
 			buffer[i] = in.readByte();
 		}
 		return buffer;
-	}
-
-	public int read(byte[] b, int offset, int length) throws IOException {
-		return in.read(b, offset, length);
 	}
 
 }

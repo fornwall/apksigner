@@ -17,7 +17,7 @@ package kellinwood.zipio;
 
 import java.io.IOException;
 
-public class CentralEnd {
+class CentralEnd {
 
 	public int signature = 0x06054b50; // end of central dir signature 4 bytes
 	public short numberThisDisk = 0; // number of this disk 2 bytes

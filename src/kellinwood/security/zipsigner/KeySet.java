@@ -21,12 +21,12 @@ import java.security.cert.X509Certificate;
 public class KeySet {
 
 	/** Certificate. */
-	X509Certificate publicKey;
+	public final X509Certificate publicKey;
 	/** Private key. */
-	PrivateKey privateKey;
+	public final PrivateKey privateKey;
 	/** Signature block template. */
-	byte[] sigBlockTemplate;
-	String signatureAlgorithm = "SHA1withRSA";
+	final byte[] sigBlockTemplate;
+	public String signatureAlgorithm = "SHA1withRSA";
 
 	public KeySet(X509Certificate publicKey, PrivateKey privateKey, byte[] sigBlockTemplate) {
 		this.publicKey = publicKey;
@@ -34,8 +34,7 @@ public class KeySet {
 		this.sigBlockTemplate = sigBlockTemplate;
 	}
 
-	public KeySet(X509Certificate publicKey, PrivateKey privateKey, String signatureAlgorithm,
-			byte[] sigBlockTemplate) {
+	public KeySet(X509Certificate publicKey, PrivateKey privateKey, String signatureAlgorithm, byte[] sigBlockTemplate) {
 		this.publicKey = publicKey;
 		this.privateKey = privateKey;
 		if (signatureAlgorithm != null)
@@ -43,35 +42,4 @@ public class KeySet {
 		this.sigBlockTemplate = sigBlockTemplate;
 	}
 
-	public X509Certificate getPublicKey() {
-		return publicKey;
-	}
-
-	public void setPublicKey(X509Certificate publicKey) {
-		this.publicKey = publicKey;
-	}
-
-	public PrivateKey getPrivateKey() {
-		return privateKey;
-	}
-
-	public void setPrivateKey(PrivateKey privateKey) {
-		this.privateKey = privateKey;
-	}
-
-	public byte[] getSigBlockTemplate() {
-		return sigBlockTemplate;
-	}
-
-	public void setSigBlockTemplate(byte[] sigBlockTemplate) {
-		this.sigBlockTemplate = sigBlockTemplate;
-	}
-
-	public String getSignatureAlgorithm() {
-		return signatureAlgorithm;
-	}
-
-	public void setSignatureAlgorithm(String signatureAlgorithm) {
-		this.signatureAlgorithm = signatureAlgorithm;
-	}
 }

@@ -122,14 +122,12 @@ public class CertCreator {
 			String keyName, char[] keyPass, String certSignatureAlgorithm, int certValidityYears,
 			DistinguishedNameValues distinguishedNameValues) {
 		try {
-
 			KeySet keySet = createKey(keyAlgorithm, keySize, keyName, certSignatureAlgorithm, certValidityYears,
 					distinguishedNameValues);
 
 			KeyStore privateKS = KeyStoreFileManager.createKeyStore(storePath, storePass);
-
-			privateKS.setKeyEntry(keyName, keySet.getPrivateKey(), keyPass,
-					new java.security.cert.Certificate[] { keySet.getPublicKey() });
+			privateKS.setKeyEntry(keyName, keySet.privateKey, keyPass,
+					new java.security.cert.Certificate[] { keySet.publicKey });
 
 			File sfile = new File(storePath);
 			if (sfile.exists()) {
@@ -155,8 +153,8 @@ public class CertCreator {
 
 			KeyStore privateKS = KeyStoreFileManager.loadKeyStore(storePath, storePass);
 
-			privateKS.setKeyEntry(keyName, keySet.getPrivateKey(), keyPass,
-					new java.security.cert.Certificate[] { keySet.getPublicKey() });
+			privateKS.setKeyEntry(keyName, keySet.privateKey, keyPass,
+					new java.security.cert.Certificate[] { keySet.publicKey });
 
 			KeyStoreFileManager.writeKeyStore(privateKS, storePath, storePass);
 

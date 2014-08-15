@@ -51,10 +51,8 @@ import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Observable;
 import java.util.TreeMap;
 import java.util.jar.Attributes;
 import java.util.jar.JarFile;
@@ -93,7 +91,6 @@ public class ZipSigner {
 	// Files matching this pattern are not copied to the output.
 	private static final Pattern stripPattern = Pattern.compile("^META-INF/(.*)[.](SF|RSA|DSA)$");
 
-	final Map<String, KeySet> loadedKeys = new HashMap<>();
 	KeySet keySet = null;
 
 	public void setKeys(X509Certificate publicKey, PrivateKey privateKey, byte[] signatureBlockTemplate) {
@@ -285,12 +282,12 @@ public class ZipSigner {
 	/** Write a .RSA file with a digital signature. */
 	private static void writeSignatureBlock(KeySet keySet, byte[] signatureFileBytes, OutputStream out)
 			throws IOException, GeneralSecurityException {
-		if (keySet.getSigBlockTemplate() != null) {
+		if (keySet.sigBlockTemplate != null) {
 			// Can't use default Signature on Android. Although it generates a signature that can be verified by
 			// jarsigner, the recovery program appears to require a specific algorithm/mode/padding. So we use the
 			// custom ZipSignature instead. Signature signature = Signature.getInstance("SHA1withRSA");
-			out.write(keySet.getSigBlockTemplate());
-			out.write(signWithPrivateKey(keySet.getPrivateKey(), signatureFileBytes));
+			out.write(keySet.sigBlockTemplate);
+			out.write(signWithPrivateKey(keySet.privateKey, signatureFileBytes));
 		} else {
 			byte[] sigBlock = SignatureBlockGenerator.generate(keySet, signatureFileBytes);
 			out.write(sigBlock);
@@ -328,7 +325,7 @@ public class ZipSigner {
 		ZipInput input = ZipInput.read(inputZipFilename);
 		try (ZipOutput zipOutput = new ZipOutput(new FileOutputStream(outputZipFilename))) {
 			// Assume the certificate is valid for at least an hour.
-			long timestamp = keySet.getPublicKey().getNotBefore().getTime() + 3600L * 1000;
+			long timestamp = keySet.publicKey.getNotBefore().getTime() + 3600L * 1000;
 
 			// MANIFEST.MF
 			Manifest manifest = addDigestsToManifest(input.entries);
@@ -354,14 +351,6 @@ public class ZipSigner {
 
 			// Everything else.
 			copyFiles(manifest, input.entries, zipOutput, timestamp);
-		}
-	}
-
-	public static class AutoKeyObservable extends Observable {
-		@Override
-		public void notifyObservers(Object arg) {
-			super.setChanged();
-			super.notifyObservers(arg);
 		}
 	}
 

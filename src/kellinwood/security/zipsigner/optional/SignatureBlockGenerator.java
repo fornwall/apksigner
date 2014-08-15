@@ -26,15 +26,15 @@ public class SignatureBlockGenerator {
 			List<X509Certificate> certList = new ArrayList<>();
 			CMSTypedData msg = new CMSProcessableByteArray(content);
 
-			certList.add(keySet.getPublicKey());
+			certList.add(keySet.publicKey);
 
 			Store certs = new JcaCertStore(certList);
 
 			CMSSignedDataGenerator gen = new CMSSignedDataGenerator();
 
-			JcaContentSignerBuilder jcaContentSignerBuilder = new JcaContentSignerBuilder(
-					keySet.getSignatureAlgorithm()).setProvider("SC");
-			ContentSigner sha1Signer = jcaContentSignerBuilder.build(keySet.getPrivateKey());
+			JcaContentSignerBuilder jcaContentSignerBuilder = new JcaContentSignerBuilder(keySet.signatureAlgorithm)
+					.setProvider("SC");
+			ContentSigner sha1Signer = jcaContentSignerBuilder.build(keySet.privateKey);
 
 			JcaDigestCalculatorProviderBuilder jcaDigestCalculatorProviderBuilder = new JcaDigestCalculatorProviderBuilder()
 					.setProvider("SC");
@@ -43,8 +43,7 @@ public class SignatureBlockGenerator {
 			JcaSignerInfoGeneratorBuilder jcaSignerInfoGeneratorBuilder = new JcaSignerInfoGeneratorBuilder(
 					digestCalculatorProvider);
 			jcaSignerInfoGeneratorBuilder.setDirectSignature(true);
-			SignerInfoGenerator signerInfoGenerator = jcaSignerInfoGeneratorBuilder.build(sha1Signer,
-					keySet.getPublicKey());
+			SignerInfoGenerator signerInfoGenerator = jcaSignerInfoGeneratorBuilder.build(sha1Signer, keySet.publicKey);
 
 			gen.addSignerInfoGenerator(signerInfoGenerator);
 			gen.addCertificates(certs);

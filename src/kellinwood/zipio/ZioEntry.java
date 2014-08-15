@@ -158,32 +158,30 @@ public final class ZioEntry implements Cloneable {
 		// for the data read. The entry's attributes might also have
 		// been changed since the central dir entry was read (e.g.,
 		// filename), so throw away the values here.
-		int tmpInt;
-		short tmpShort;
 
 		// 4 2 Version needed to extract (minimum)
-		/* versionRequired */tmpShort = input.readShort();
+		/* versionRequired */input.readShort();
 
 		// 6 2 General purpose bit flag
-		/* generalPurposeBits */tmpShort = input.readShort();
+		/* generalPurposeBits */input.readShort();
 
 		// 8 2 Compression method
-		/* compression */tmpShort = input.readShort();
+		/* compression */input.readShort();
 
 		// 10 2 File last modification time
-		/* modificationTime */tmpShort = input.readShort();
+		/* modificationTime */input.readShort();
 
 		// 12 2 File last modification date
-		/* modificationDate */tmpShort = input.readShort();
+		/* modificationDate */input.readShort();
 
 		// 14 4 CRC-32
-		/* crc32 */tmpInt = input.readInt();
+		/* crc32 */input.readInt();
 
 		// 18 4 Compressed size
-		/* compressedSize */tmpInt = input.readInt();
+		/* compressedSize */input.readInt();
 
 		// 22 4 Uncompressed size
-		/* size */tmpInt = input.readInt();
+		/* size */input.readInt();
 
 		// 26 2 File name length (n)
 		short fileNameLen = input.readShort();
@@ -192,10 +190,10 @@ public final class ZioEntry implements Cloneable {
 		short extraLen = input.readShort();
 
 		// 30 n File name
-		String localFilename = input.readString(fileNameLen);
+		/* String localFilename = */input.readString(fileNameLen);
 
-		// Extra data
-		byte[] extra = input.readBytes(extraLen);
+		// Extra data. FIXME: Avoid useless memory allocation.
+		/* byte[] extra = */input.readBytes(extraLen);
 
 		// Record the file position of this entry's data.
 		dataPosition = input.getFilePointer();
