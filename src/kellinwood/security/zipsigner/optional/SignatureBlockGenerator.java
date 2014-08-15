@@ -18,7 +18,7 @@ import java.util.List;
 public class SignatureBlockGenerator {
 
 	/**
-	 * Sign the given content using the private and public keys from the keySet, and return the encoded CMS (PKCS#7)
+	 * Sign the given content using the private and public keys from the keySet and return the encoded CMS (PKCS#7)
 	 * data. Use of direct signature and DER encoding produces a block that is verifiable by Android recovery programs.
 	 */
 	public static byte[] generate(KeySet keySet, byte[] content) {

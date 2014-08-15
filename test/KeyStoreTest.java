@@ -1,12 +1,11 @@
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
-import java.security.Key;
 import java.security.KeyStore;
 import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.X509Certificate;
 
-import kellinwood.security.zipsigner.ZipSigner;
 import kellinwood.security.zipsigner.optional.CustomKeySigner;
 import kellinwood.security.zipsigner.optional.KeyStoreFileManager;
 import kellinwood.security.zipsigner.optional.LoadKeystoreException;
@@ -57,10 +56,16 @@ public class KeyStoreTest {
 			Assert.assertNotNull(publicKey);
 			publicKey.checkValidity();
 
-			Key key = keyStore.getKey("the_alias", "ijklmnop".toCharArray());
-			PrivateKey privateKey = (PrivateKey) key;
+			PrivateKey privateKey = (PrivateKey) keyStore.getKey("the_alias", "ijklmnop".toCharArray());
 			Assert.assertNotNull(privateKey);
 			Assert.assertEquals(privateKey.getAlgorithm(), "RSA");
+
+			try {
+				keyStore.getKey("the_alias", "wrong_password".toCharArray());
+				Assert.fail("Wrong private key password should throw");
+			} catch (UnrecoverableKeyException e) {
+				// Expected
+			}
 		}
 
 		try {
@@ -81,8 +86,7 @@ public class KeyStoreTest {
 		File outputFile = new File(new File(inputFile).getParent(), "test_signed.jar");
 
 		try {
-			ZipSigner signer = new ZipSigner();
-			CustomKeySigner.signZip(signer, keystorePath, null, alias, keyPasssword, "SHA1withRSA", inputFile,
+			CustomKeySigner.signZip(keystorePath, null, alias, keyPasssword, "SHA1withRSA", inputFile,
 					outputFile.getAbsolutePath());
 
 			Process jarsignerProcess = Runtime.getRuntime().exec("jarsigner -verify " + outputFile.getAbsolutePath());

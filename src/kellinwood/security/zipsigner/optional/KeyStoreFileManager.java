@@ -42,9 +42,9 @@ public class KeyStoreFileManager {
 		KeyStore ks = null;
 		try {
 			ks = new JksKeyStore();
-			FileInputStream fis = new FileInputStream(keystorePath);
-			ks.load(fis, password);
-			fis.close();
+			try (FileInputStream fis = new FileInputStream(keystorePath)) {
+				ks.load(fis, password);
+			}
 			return ks;
 		} catch (LoadKeystoreException x) {
 			// This type of exception is thrown when the keystore is a JKS keystore, but the file is malformed or the
@@ -53,9 +53,9 @@ public class KeyStoreFileManager {
 		} catch (Exception x) {
 			try {
 				ks = KeyStore.getInstance("bks", provider);
-				FileInputStream fis = new FileInputStream(keystorePath);
-				ks.load(fis, password);
-				fis.close();
+				try (FileInputStream fis = new FileInputStream(keystorePath)) {
+					ks.load(fis, password);
+				}
 				return ks;
 			} catch (Exception e) {
 				throw new RuntimeException("Failed to load keystore: " + e.getMessage(), e);
@@ -67,9 +67,8 @@ public class KeyStoreFileManager {
 		File keystoreFile = new File(keystorePath);
 		try {
 			if (keystoreFile.exists()) {
-				// I've had some trouble saving new verisons of the keystore file in which the file becomes
-				// empty/corrupt.
-				// Saving the new version to a new file and creating a backup of the old version.
+				// I've had some trouble saving new versions of the key store file in which the file becomes
+				// empty/corrupt. Saving the new version to a new file and creating a backup of the old version.
 				File tmpFile = File.createTempFile(keystoreFile.getName(), null, keystoreFile.getParentFile());
 				FileOutputStream fos = new FileOutputStream(tmpFile);
 				ks.store(fos, password);
@@ -127,9 +126,8 @@ public class KeyStoreFileManager {
 		if (srcFile.length() != destFile.length()) {
 			throw new IOException("Failed to copy full contents from '" + srcFile + "' to '" + destFile + "'");
 		}
-		if (preserveFileDate) {
+		if (preserveFileDate)
 			destFile.setLastModified(srcFile.lastModified());
-		}
 	}
 
 	public static void renameTo(File fromFile, File toFile) throws IOException {

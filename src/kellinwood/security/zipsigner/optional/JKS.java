@@ -30,6 +30,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.DigestInputStream;
 import java.security.DigestOutputStream;
 import java.security.Key;
@@ -95,7 +96,7 @@ import javax.crypto.spec.SecretKeySpec;
  * </ol> </li> </ol>
  *
  * <p>
- * (See <a href="genkey.java">this file</a> for some idea of how I was able to figure out these algorithms)
+ * (See <a href="http://metastatic.org/source/genkey.java">this file</a> for some idea of how I was able to figure out these algorithms)
  * </p>
  *
  * <p>
@@ -122,16 +123,22 @@ import javax.crypto.spec.SecretKeySpec;
  * US_ASCII the ASCII byte representation of the string.)
  *
  * <p>
- * The source code of this class should be available in the file <a
- * href="http://metastatic.org/source/JKS.java">JKS.java</a>.
+ * The original source code by Casey Marshall of this class should be available in the file <a
+ * href="http://metastatic.org/source/JKS.java">http://metastatic.org/source/JKS.java</a>.
  *
+ * <p>
+ * Changes by Ken Ellinwood:
+ * <ul>
+ * <li>Fixed a NullPointerException in engineLoad(). This method must return gracefully if the keystore input stream is
+ * null.</li>
+ * <li>engineGetCertificateEntry() was updated to return the first cert in the chain for private key entries.</li>
+ * <li>Lowercase the alias names, otherwise keytool chokes on the file created by this code.</li>
+ * <li>Fixed the integrity check in engineLoad(), previously the exception was never thrown regardless of password
+ * value.</li>
+ * </ul>
+ * 
  * @author Casey Marshall (rsdio@metastatic.org)
- *
- *         Changes by Ken Ellinwood: ** Fixed a NullPointerException in engineLoad(). This method must return gracefully
- *         if the keystore input stream is null. ** engineGetCertificateEntry() was updated to return the first cert in
- *         the chain for private key entries. ** Lowercase the alias names, otherwise keytool chokes on the file created
- *         by this code. ** Fixed the integrity check in engineLoad(), previously the exception was never thrown
- *         regardless of password value.
+ * @author Ken Ellinwood
  */
 public class JKS extends KeyStoreSpi {
 
@@ -290,7 +297,7 @@ public class JKS extends KeyStoreSpi {
 			CertificateException {
 		MessageDigest md = MessageDigest.getInstance("SHA1");
 		md.update(charsToBytes(passwd));
-		md.update("Mighty Aphrodite".getBytes("UTF-8"));
+		md.update("Mighty Aphrodite".getBytes(StandardCharsets.UTF_8));
 		DataOutputStream dout = new DataOutputStream(new DigestOutputStream(out, md));
 		dout.writeInt(MAGIC);
 		dout.writeInt(2);
@@ -325,7 +332,8 @@ public class JKS extends KeyStoreSpi {
 		MessageDigest md = MessageDigest.getInstance("SHA");
 		if (passwd != null)
 			md.update(charsToBytes(passwd));
-		md.update("Mighty Aphrodite".getBytes("UTF-8")); // HAR HAR
+		md.update("Mighty Aphrodite".getBytes(StandardCharsets.UTF_8));
+
 		aliases.clear();
 		trustedCerts.clear();
 		privateKeys.clear();

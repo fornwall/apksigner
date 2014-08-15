@@ -21,7 +21,7 @@ import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 import java.util.zip.DeflaterOutputStream;
 
-public final class ZioEntryOutputStream extends OutputStream {
+final class ZioEntryOutputStream extends OutputStream {
 
 	int size = 0; // tracks uncompressed size of data
 	final CRC32 crc = new CRC32();

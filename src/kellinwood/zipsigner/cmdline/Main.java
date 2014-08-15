@@ -78,9 +78,6 @@ public class Main {
 			Option certOption = new Option("c", "cert", false, "X.509 public key certificate file");
 			certOption.setArgs(1);
 
-			Option sbtOption = new Option("t", "template", false, "Signature block template file");
-			sbtOption.setArgs(1);
-
 			Option keystoreOption = new Option("s", "keystore", true, "Keystore file");
 			keystoreOption.setArgs(1);
 
@@ -90,7 +87,6 @@ public class Main {
 			options.addOption(helpOption);
 			options.addOption(keyOption);
 			options.addOption(certOption);
-			options.addOption(sbtOption);
 			options.addOption(pwOption);
 			options.addOption(keystoreOption);
 			options.addOption(aliasOption);
@@ -115,8 +111,6 @@ public class Main {
 			if (argList.size() != 2)
 				usage(options);
 
-			ZipSigner signer = new ZipSigner();
-
 			PrivateKey privateKey = null;
 			if (cmdLine.hasOption(keyOption.getOpt())) {
 				if (!cmdLine.hasOption(certOption.getOpt())) {
@@ -134,7 +128,7 @@ public class Main {
 				}
 				URL privateKeyUrl = new File(keyOption.getValue()).toURI().toURL();
 
-				privateKey = signer.readPrivateKey(privateKeyUrl, keypw);
+				privateKey = ZipSigner.readPrivateKey(privateKeyUrl, keypw);
 			}
 
 			X509Certificate cert = null;
@@ -144,18 +138,11 @@ public class Main {
 					usage(options);
 				}
 				URL certUrl = new File(certOption.getValue()).toURI().toURL();
-				cert = signer.readPublicKey(certUrl);
-			}
-
-			byte[] sigBlockTemplate = null;
-			if (cmdLine.hasOption(sbtOption.getOpt())) {
-				URL sbtUrl = new File(sbtOption.getValue()).toURI().toURL();
-				sigBlockTemplate = signer.readContentAsBytes(sbtUrl);
+				cert = ZipSigner.readPublicKey(certUrl);
 			}
 
 			if (cmdLine.hasOption(keyOption.getOpt())) {
-				signer.setKeys(cert, privateKey, sigBlockTemplate);
-				signer.signZip(argList.get(0), argList.get(1));
+				ZipSigner.signZip(cert, privateKey, null, argList.get(0), argList.get(1));
 			} else if (cmdLine.hasOption((keystoreOption.getOpt()))) {
 				String keystorePath = cmdLine.getOptionValue(keystoreOption.getOpt());
 				String alias = null;
@@ -178,7 +165,7 @@ public class Main {
 						keypw = null;
 				}
 
-				CustomKeySigner.signZip(signer, keystorePath, null, alias, keypw.toCharArray(), "SHA1withRSA",
+				CustomKeySigner.signZip(keystorePath, null, alias, keypw.toCharArray(), "SHA1withRSA",
 						argList.get(0), argList.get(1));
 			} else {
 				System.err.println("No keystore given!");

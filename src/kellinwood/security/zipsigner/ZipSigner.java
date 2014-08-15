@@ -34,7 +34,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.URL;
 import java.security.DigestOutputStream;
@@ -59,10 +58,8 @@ import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.regex.Pattern;
 
-import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.EncryptedPrivateKeyInfo;
-import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 
@@ -91,24 +88,10 @@ public class ZipSigner {
 	// Files matching this pattern are not copied to the output.
 	private static final Pattern stripPattern = Pattern.compile("^META-INF/(.*)[.](SF|RSA|DSA)$");
 
-	KeySet keySet = null;
-
-	public void setKeys(X509Certificate publicKey, PrivateKey privateKey, byte[] signatureBlockTemplate) {
-		keySet = new KeySet(publicKey, privateKey, signatureBlockTemplate);
-	}
-
-	public void setKeys(X509Certificate publicKey, PrivateKey privateKey, String signatureAlgorithm,
-			byte[] signatureBlockTemplate) {
-		keySet = new KeySet(publicKey, privateKey, signatureAlgorithm, signatureBlockTemplate);
-	}
-
-	public X509Certificate readPublicKey(URL publicKeyUrl) throws IOException, GeneralSecurityException {
-		InputStream input = publicKeyUrl.openStream();
-		try {
+	public static X509Certificate readPublicKey(URL publicKeyUrl) throws IOException, GeneralSecurityException {
+		try (InputStream input = publicKeyUrl.openStream()) {
 			CertificateFactory cf = CertificateFactory.getInstance("X.509");
 			return (X509Certificate) cf.generateCertificate(input);
-		} finally {
-			input.close();
 		}
 	}
 
@@ -148,46 +131,31 @@ public class ZipSigner {
 		}
 	}
 
-	/** Fetch the content at the specified URL and return it as a byte array. */
-	public byte[] readContentAsBytes(URL contentUrl) throws IOException {
-		return readContentAsBytes(contentUrl.openStream());
-	}
-
 	/** Fetch the content from the given stream and return it as a byte array. */
-	public byte[] readContentAsBytes(InputStream input) throws IOException {
+	public static byte[] readContentAsBytes(InputStream input) throws IOException {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-		byte[] buffer = new byte[2048];
-
-		int numRead = input.read(buffer);
-		while (numRead != -1) {
+		byte[] buffer = new byte[4096];
+		int numRead;
+		while ((numRead = input.read(buffer)) != -1)
 			baos.write(buffer, 0, numRead);
-			numRead = input.read(buffer);
-		}
-
-		byte[] bytes = baos.toByteArray();
-		return bytes;
+		return baos.toByteArray();
 	}
 
 	/** Read a PKCS 8 format private key. */
-	public PrivateKey readPrivateKey(URL privateKeyUrl, String keyPassword) throws IOException,
+	public static PrivateKey readPrivateKey(URL privateKeyUrl, String keyPassword) throws IOException,
 			GeneralSecurityException {
-		DataInputStream input = new DataInputStream(privateKeyUrl.openStream());
-		try {
-			byte[] bytes = readContentAsBytes(input);
+		try (DataInputStream input = new DataInputStream(privateKeyUrl.openStream())) {
+			byte[] privateKeyBytes = readContentAsBytes(input);
 
-			KeySpec spec = decryptPrivateKey(bytes, keyPassword);
-			if (spec == null) {
-				spec = new PKCS8EncodedKeySpec(bytes);
-			}
+			KeySpec spec = decryptPrivateKey(privateKeyBytes, keyPassword);
+			if (spec == null)
+				spec = new PKCS8EncodedKeySpec(privateKeyBytes);
 
 			try {
 				return KeyFactory.getInstance("RSA").generatePrivate(spec);
 			} catch (InvalidKeySpecException ex) {
 				return KeyFactory.getInstance("DSA").generatePrivate(spec);
 			}
-		} finally {
-			input.close();
 		}
 	}
 
@@ -247,12 +215,11 @@ public class ZipSigner {
 	}
 
 	/** Write the signature file to the given output stream. */
-	private static void generateSignatureFile(Manifest manifest, OutputStream out) throws IOException,
-			GeneralSecurityException {
+	private static byte[] generateSignatureFile(Manifest manifest) throws IOException, GeneralSecurityException {
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		out.write(("Signature-Version: 1.0\r\n").getBytes());
 		out.write(("Created-By: 1.0 (Android SignApk)\r\n").getBytes());
 
-		// BASE64Encoder base64 = new BASE64Encoder();
 		MessageDigest md = MessageDigest.getInstance("SHA1");
 		PrintStream print = new PrintStream(new DigestOutputStream(new ByteArrayOutputStream(), md), true, "UTF-8");
 
@@ -276,100 +243,60 @@ public class ZipSigner {
 			out.write(nameEntry.getBytes());
 			out.write(("SHA1-Digest: " + Base64.encode(md.digest()) + "\r\n\r\n").getBytes());
 		}
-
-	}
-
-	/** Write a .RSA file with a digital signature. */
-	private static void writeSignatureBlock(KeySet keySet, byte[] signatureFileBytes, OutputStream out)
-			throws IOException, GeneralSecurityException {
-		if (keySet.sigBlockTemplate != null) {
-			// Can't use default Signature on Android. Although it generates a signature that can be verified by
-			// jarsigner, the recovery program appears to require a specific algorithm/mode/padding. So we use the
-			// custom ZipSignature instead. Signature signature = Signature.getInstance("SHA1withRSA");
-			out.write(keySet.sigBlockTemplate);
-			out.write(signWithPrivateKey(keySet.privateKey, signatureFileBytes));
-		} else {
-			byte[] sigBlock = SignatureBlockGenerator.generate(keySet, signatureFileBytes);
-			out.write(sigBlock);
-		}
-	}
-
-	/**
-	 * Copy all the files in a manifest from input to output. We set the modification times in the output to a fixed
-	 * time, so as to reduce variation in the output file and make incremental OTAs more efficient.
-	 */
-	private static void copyFiles(Manifest manifest, Map<String, ZioEntry> input, ZipOutput output, long timestamp)
-			throws IOException {
-		Map<String, Attributes> entries = manifest.getEntries();
-		List<String> names = new ArrayList<>(entries.keySet());
-		Collections.sort(names);
-		for (String name : names) {
-			ZioEntry inEntry = input.get(name);
-			inEntry.setTime(timestamp);
-			output.write(inEntry);
-		}
+		return out.toByteArray();
 	}
 
 	/**
 	 * Sign the file using the given public key cert, private key, and signature block template. The signature block
 	 * template parameter may be null, but if so android-sun-jarsign-support.jar must be in the classpath.
 	 */
-	public void signZip(String inputZipFilename, String outputZipFilename) throws IOException, GeneralSecurityException {
+	public static void signZip(X509Certificate publicKey, PrivateKey privateKey, String signatureAlgorithm,
+			String inputZipFilename, String outputZipFilename) throws IOException, GeneralSecurityException {
+		KeySet keySet = new KeySet(publicKey, privateKey, signatureAlgorithm);
+
 		File inFile = new File(inputZipFilename).getCanonicalFile();
 		File outFile = new File(outputZipFilename).getCanonicalFile();
 		if (inFile.equals(outFile))
 			throw new IllegalArgumentException("Input and output files are the same");
-		else if (keySet == null)
-			throw new IllegalStateException("No keys configured for signing the file!");
 
-		ZipInput input = ZipInput.read(inputZipFilename);
-		try (ZipOutput zipOutput = new ZipOutput(new FileOutputStream(outputZipFilename))) {
-			// Assume the certificate is valid for at least an hour.
-			long timestamp = keySet.publicKey.getNotBefore().getTime() + 3600L * 1000;
+		try (ZipInput input = new ZipInput(inputZipFilename)) {
+			try (ZipOutput zipOutput = new ZipOutput(new FileOutputStream(outputZipFilename))) {
+				// Assume the certificate is valid for at least an hour.
+				long timestamp = keySet.publicKey.getNotBefore().getTime() + 3600L * 1000;
 
-			// MANIFEST.MF
-			Manifest manifest = addDigestsToManifest(input.entries);
-			ZioEntry ze = new ZioEntry(JarFile.MANIFEST_NAME);
-			ze.setTime(timestamp);
-			manifest.write(ze.getOutputStream());
-			zipOutput.write(ze);
+				// MANIFEST.MF
+				Manifest manifest = addDigestsToManifest(input.entries);
+				ZioEntry ze = new ZioEntry(JarFile.MANIFEST_NAME);
+				ze.setTime(timestamp);
+				manifest.write(ze.getOutputStream());
+				zipOutput.write(ze);
 
-			// CERT.SF
-			ze = new ZioEntry(CERT_SF_NAME);
-			ze.setTime(timestamp);
-			ByteArrayOutputStream out = new ByteArrayOutputStream();
-			generateSignatureFile(manifest, out);
-			byte[] sfBytes = out.toByteArray();
-			ze.getOutputStream().write(sfBytes);
-			zipOutput.write(ze);
+				byte[] certSfBytes = generateSignatureFile(manifest);
 
-			// CERT.RSA
-			ze = new ZioEntry(CERT_RSA_NAME);
-			ze.setTime(timestamp);
-			writeSignatureBlock(keySet, sfBytes, ze.getOutputStream());
-			zipOutput.write(ze);
+				// CERT.SF
+				ze = new ZioEntry(CERT_SF_NAME);
+				ze.setTime(timestamp);
+				ze.getOutputStream().write(certSfBytes);
+				zipOutput.write(ze);
 
-			// Everything else.
-			copyFiles(manifest, input.entries, zipOutput, timestamp);
+				// CERT.RSA
+				ze = new ZioEntry(CERT_RSA_NAME);
+				ze.setTime(timestamp);
+				ze.getOutputStream().write(SignatureBlockGenerator.generate(keySet, certSfBytes));
+				zipOutput.write(ze);
+
+				// Copy all the files in a manifest from input to output. We set the modification times in the output to
+				// a fixed time, so as to reduce variation in the output file and make incremental OTAs more efficient.
+				Map<String, Attributes> entries = manifest.getEntries();
+				List<String> names = new ArrayList<>(entries.keySet());
+				Collections.sort(names);
+				for (String name : names) {
+					ZioEntry inEntry = input.entries.get(name);
+					inEntry.setTime(timestamp);
+					zipOutput.write(inEntry);
+				}
+			}
 		}
-	}
-
-	private static byte[] signWithPrivateKey(PrivateKey privateKey, byte[] data) throws GeneralSecurityException,
-			BadPaddingException, IllegalBlockSizeException {
-		MessageDigest md = MessageDigest.getInstance("SHA1");
-		md.update(data);
-
-		Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
-		cipher.init(Cipher.ENCRYPT_MODE, privateKey);
-		cipher.update(new byte[] {
-				// Before algorithm id:
-				0x30, 0x21,
-				// Algorithm id (sun.security.x509.AlgorithmId.get("SHA1").encode()):
-				0x30, 0x09, 0x06, 0x05, 0x2B, 0x0E, 0x03, 0x02, 0x1A, 0x05, 0x00,
-				// After:
-				0x04, 0x14 });
-		cipher.update(md.digest());
-		return cipher.doFinal();
 	}
 
 }

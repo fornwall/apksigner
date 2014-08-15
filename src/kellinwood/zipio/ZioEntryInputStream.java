@@ -20,7 +20,7 @@ import java.io.InputStream;
 import java.io.RandomAccessFile;
 
 /** Input stream used to read just the data from a zip file entry. */
-public final class ZioEntryInputStream extends InputStream {
+final class ZioEntryInputStream extends InputStream {
 
 	RandomAccessFile raf;
 	int size;

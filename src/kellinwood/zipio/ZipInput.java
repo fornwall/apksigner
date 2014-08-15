@@ -20,7 +20,7 @@ public final class ZipInput implements AutoCloseable {
 		in = new RandomAccessFile(filename, "r");
 		fileLength = in.length();
 
-		long posEOCDR = scanForEOCDR(256);
+		long posEOCDR = scanForEOCDR((int) Math.min(fileLength, 256));
 		in.seek(posEOCDR);
 		centralEnd = CentralEnd.read(this);
 		in.seek(centralEnd.centralStartOffset);
@@ -29,10 +29,6 @@ public final class ZipInput implements AutoCloseable {
 			ZioEntry entry = new ZioEntry(this);
 			entries.put(entry.getName(), entry);
 		}
-	}
-
-	public static ZipInput read(String filename) throws IOException {
-		return new ZipInput(filename);
 	}
 
 	public Manifest getManifest() throws IOException {

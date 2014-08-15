@@ -1,21 +1,24 @@
 package kellinwood.security.zipsigner.optional;
 
+import java.io.File;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.KeyStore;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Vector;
+
 import kellinwood.security.zipsigner.KeySet;
 
 import org.spongycastle.asn1.ASN1ObjectIdentifier;
 import org.spongycastle.asn1.x500.style.BCStyle;
 import org.spongycastle.jce.X509Principal;
 import org.spongycastle.x509.X509V3CertificateGenerator;
-
-import java.io.File;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.security.*;
-import java.security.cert.X509Certificate;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Vector;
 
 /** All methods create self-signed certificates. */
 public class CertCreator {
@@ -100,15 +103,15 @@ public class CertCreator {
 	}
 
 	/**
-	 * Creates a new keystore and self-signed key. The key will have the same password as the key, and will be RSA 2048,
-	 * with the cert signed using SHA1withRSA. The certificate will have a validity of 30 years).
+	 * Creates a new key store and self-signed key. The key will have the same password as the key, and will be RSA 2048,
+	 * with the certificate signed using SHA1withRSA. The certificate will have a validity of 30 years).
 	 *
 	 * @param storePath
-	 *            - pathname of the new keystore file
+	 *            - pathname of the new key store file
 	 * @param password
-	 *            - keystore and key password
+	 *            - key store and key password
 	 * @param keyName
-	 *            - the new key will have this as its alias within the keystore
+	 *            - the new key will have this as its alias within the key store
 	 * @param distinguishedNameValues
 	 *            - contains Country, State, Locality,...,Common Name, etc.
 	 */
@@ -143,7 +146,7 @@ public class CertCreator {
 		}
 	}
 
-	/** Create a new key and store it in an existing keystore. */
+	/** Create a new key and store it in an existing key store. */
 	public static KeySet createKey(String storePath, char[] storePass, String keyAlgorithm, int keySize,
 			String keyName, char[] keyPass, String certSignatureAlgorithm, int certValidityYears,
 			DistinguishedNameValues distinguishedNameValues) {
@@ -191,7 +194,6 @@ public class CertCreator {
 			v3CertGen.setSignatureAlgorithm(certSignatureAlgorithm);
 
 			X509Certificate PKCertificate = v3CertGen.generate(KPair.getPrivate(), "BC");
-
 			return new KeySet(PKCertificate, KPair.getPrivate(), null);
 		} catch (Exception x) {
 			throw new RuntimeException(x.getMessage(), x);
