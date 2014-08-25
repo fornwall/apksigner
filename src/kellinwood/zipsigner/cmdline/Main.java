@@ -34,7 +34,6 @@ import org.apache.commons.cli.MissingOptionException;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.cli.Parser;
 
 /** Sign files from the command line using zipsigner-lib. */
 public class Main {
@@ -62,116 +61,108 @@ public class Main {
 		return System.console().readPassword();
 	}
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Exception {
+		Options options = new Options();
+		CommandLine cmdLine = null;
+		Option helpOption = new Option("h", "help", false, "Display usage information");
+		options.addOption(helpOption);
+
+		Option keyOption = new Option("k", "key", false, "PCKS#8 encoded private key file");
+		keyOption.setArgs(1);
+		options.addOption(keyOption);
+
+		Option pwOption = new Option("p", "keypass", false, "Private key password");
+		pwOption.setArgs(1);
+		options.addOption(pwOption);
+
+		Option certOption = new Option("c", "cert", false, "X.509 public key certificate file");
+		certOption.setArgs(1);
+		options.addOption(certOption);
+
+		Option keystoreOption = new Option("s", "keystore", true, "Keystore file");
+		keystoreOption.setArgs(1);
+		options.addOption(keystoreOption);
+
+		Option aliasOption = new Option("a", "alias", true, "Alias for key/cert in the keystore");
+		aliasOption.setArgs(1);
+		options.addOption(aliasOption);
+
 		try {
+			cmdLine = new BasicParser().parse(options, args);
+		} catch (MissingOptionException x) {
+			System.out.println("One or more required options are missing: " + x.getMessage());
+			usage(options);
+		} catch (ParseException x) {
+			System.err.println(x.getClass().getSimpleName() + ": " + x.getMessage());
+			usage(options);
+		}
 
-			Options options = new Options();
-			CommandLine cmdLine = null;
-			Option helpOption = new Option("h", "help", false, "Display usage information");
+		if (cmdLine.hasOption(helpOption.getOpt()))
+			usage(options);
 
-			Option keyOption = new Option("k", "key", false, "PCKS#8 encoded private key file");
-			keyOption.setArgs(1);
+		@SuppressWarnings("unchecked")
+		List<String> argList = cmdLine.getArgList();
+		if (argList.size() != 2)
+			usage(options);
 
-			Option pwOption = new Option("p", "keypass", false, "Private key password");
-			pwOption.setArgs(1);
-
-			Option certOption = new Option("c", "cert", false, "X.509 public key certificate file");
-			certOption.setArgs(1);
-
-			Option keystoreOption = new Option("s", "keystore", true, "Keystore file");
-			keystoreOption.setArgs(1);
-
-			Option aliasOption = new Option("a", "alias", true, "Alias for key/cert in the keystore");
-			aliasOption.setArgs(1);
-
-			options.addOption(helpOption);
-			options.addOption(keyOption);
-			options.addOption(certOption);
-			options.addOption(pwOption);
-			options.addOption(keystoreOption);
-			options.addOption(aliasOption);
-
-			Parser parser = new BasicParser();
-
-			try {
-				cmdLine = parser.parse(options, args);
-			} catch (MissingOptionException x) {
-				System.out.println("One or more required options are missing: " + x.getMessage());
-				usage(options);
-			} catch (ParseException x) {
-				System.err.println(x.getClass().getSimpleName() + ": " + x.getMessage());
+		PrivateKey privateKey = null;
+		if (cmdLine.hasOption(keyOption.getOpt())) {
+			if (!cmdLine.hasOption(certOption.getOpt())) {
+				System.out.println("Certificate file is required when specifying a private key");
 				usage(options);
 			}
 
-			if (cmdLine.hasOption(helpOption.getOpt()))
-				usage(options);
-
-			@SuppressWarnings("unchecked")
-			List<String> argList = cmdLine.getArgList();
-			if (argList.size() != 2)
-				usage(options);
-
-			PrivateKey privateKey = null;
-			if (cmdLine.hasOption(keyOption.getOpt())) {
-				if (!cmdLine.hasOption(certOption.getOpt())) {
-					System.out.println("Certificate file is required when specifying a private key");
-					usage(options);
-				}
-
-				String keypw = null;
-				if (cmdLine.hasOption(pwOption.getOpt()))
-					keypw = pwOption.getValue();
-				else {
-					keypw = new String(readPassword("Key password"));
-					if (keypw.equals(""))
-						keypw = null;
-				}
-				URL privateKeyUrl = new File(keyOption.getValue()).toURI().toURL();
-
-				privateKey = ZipSigner.readPrivateKey(privateKeyUrl, keypw);
+			String keypw = null;
+			if (cmdLine.hasOption(pwOption.getOpt()))
+				keypw = pwOption.getValue();
+			else {
+				keypw = new String(readPassword("Key password"));
+				if (keypw.equals(""))
+					keypw = null;
 			}
+			URL privateKeyUrl = new File(keyOption.getValue()).toURI().toURL();
 
-			X509Certificate cert = null;
-			if (cmdLine.hasOption(certOption.getOpt())) {
-				if (!cmdLine.hasOption(keyOption.getOpt())) {
-					System.out.println("Private key file is required when specifying a certificate");
-					usage(options);
-				}
-				URL certUrl = new File(certOption.getValue()).toURI().toURL();
-				cert = ZipSigner.readPublicKey(certUrl);
+			privateKey = ZipSigner.readPrivateKey(privateKeyUrl, keypw);
+		}
+
+		X509Certificate cert = null;
+		if (cmdLine.hasOption(certOption.getOpt())) {
+			if (!cmdLine.hasOption(keyOption.getOpt())) {
+				System.out.println("Private key file is required when specifying a certificate");
+				usage(options);
 			}
+			URL certUrl = new File(certOption.getValue()).toURI().toURL();
+			cert = ZipSigner.readPublicKey(certUrl);
+		}
 
-			if (cmdLine.hasOption(keyOption.getOpt())) {
-				ZipSigner.signZip(cert, privateKey, null, argList.get(0), argList.get(1));
-			} else if (cmdLine.hasOption((keystoreOption.getOpt()))) {
-				String keystorePath = cmdLine.getOptionValue(keystoreOption.getOpt());
-				String alias = null;
-				if (!cmdLine.hasOption(aliasOption.getOpt())) {
-					KeyStore keyStore = KeyStoreFileManager.loadKeyStore(keystorePath, (char[]) null);
-					for (Enumeration<String> e = keyStore.aliases(); e.hasMoreElements();) {
-						alias = e.nextElement();
-						System.out.println("Signing with alias: " + alias);
-						break;
-					}
-				} else {
-					alias = aliasOption.getValue();
+		if (cmdLine.hasOption(keyOption.getOpt())) {
+			ZipSigner.signZip(cert, privateKey, null, argList.get(0), argList.get(1));
+		} else if (cmdLine.hasOption((keystoreOption.getOpt()))) {
+			String keystorePath = cmdLine.getOptionValue(keystoreOption.getOpt());
+			String alias = null;
+			if (!cmdLine.hasOption(aliasOption.getOpt())) {
+				KeyStore keyStore = KeyStoreFileManager.loadKeyStore(keystorePath, (char[]) null);
+				for (Enumeration<String> e = keyStore.aliases(); e.hasMoreElements();) {
+					alias = e.nextElement();
+					System.out.println("Signing with alias: " + alias);
+					break;
 				}
-				String keypw = null;
-				if (cmdLine.hasOption(pwOption.getOpt()))
-					keypw = cmdLine.getOptionValue(pwOption.getOpt());
-				else {
-					keypw = new String(readPassword("Key password"));
-					if (keypw.equals(""))
-						keypw = null;
-				}
-
-				CustomKeySigner.signZip(keystorePath, null, alias, keypw.toCharArray(), "SHA1withRSA",
-						argList.get(0), argList.get(1));
 			} else {
-				System.err.println("No keystore given!");
+				alias = aliasOption.getValue();
 			}
-		} catch (Throwable t) {
-			t.printStackTrace();
+			String keypw = null;
+			if (cmdLine.hasOption(pwOption.getOpt()))
+				keypw = cmdLine.getOptionValue(pwOption.getOpt());
+			else {
+				keypw = new String(readPassword("Key password"));
+				if (keypw.equals(""))
+					keypw = null;
+			}
+
+			CustomKeySigner.signZip(keystorePath, null, alias, keypw.toCharArray(), "SHA1withRSA", argList.get(0),
+					argList.get(1));
+		} else {
+			System.err.println("No keystore given!");
 		}
 	}
 
