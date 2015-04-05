@@ -13,40 +13,44 @@ import kellinwood.security.zipsigner.optional.LoadKeystoreException;
 import org.junit.Assert;
 import org.junit.Test;
 
-/**
- * <pre>
- * $ keytool -genkey -v -keystore test.keystore -alias the_alias -keyalg RSA -keysize 2048 -validity 10000
- * Enter keystore password: abcdefgh  
- * Re-enter new password: abcdefgh
- * What is your first and last name?
- *   [Unknown]:  Mr Test
- * What is the name of your organizational unit?
- *   [Unknown]:  Testing Inc
- * What is the name of your organization?
- *   [Unknown]:  Testing Org
- * What is the name of your City or Locality?
- *   [Unknown]:  Chicago
- * What is the name of your State or Province?
- *   [Unknown]:  Wales
- * What is the two-letter country code for this unit?
- *   [Unknown]:  SE
- * Is CN=Mr Test, OU=Testing Inc, O=Testing Org, L=Chicago, ST=Wales, C=SE correct?
- *   [no]:  yes
- * 
- * Generating 2,048 bit RSA key pair and self-signed certificate (SHA256withRSA) with a validity of 10,000 days
- *     for: CN=Mr Test, OU=Testing Inc, O=Testing Org, L=Chicago, ST=Wales, C=SE
- * Enter key password for <the_alias>
- *     (RETURN if same as keystore password): ijklmnop  
- * Re-enter new password: ijklmnop
- * </pre>
- */
 public class KeyStoreTest {
+
+	/**
+	 * This keystore was generated as follows:
+	 * 
+	 * <pre>
+	 * $ keytool -genkey -v -keystore test.keystore -alias the_alias -keyalg RSA -keysize 2048 -validity 10000
+	 * Enter keystore password: abcdefgh  
+	 * Re-enter new password: abcdefgh
+	 * What is your first and last name?
+	 *   [Unknown]:  Mr Test
+	 * What is the name of your organizational unit?
+	 *   [Unknown]:  Testing Inc
+	 * What is the name of your organization?
+	 *   [Unknown]:  Testing Org
+	 * What is the name of your City or Locality?
+	 *   [Unknown]:  Chicago
+	 * What is the name of your State or Province?
+	 *   [Unknown]:  Wales
+	 * What is the two-letter country code for this unit?
+	 *   [Unknown]:  SE
+	 * Is CN=Mr Test, OU=Testing Inc, O=Testing Org, L=Chicago, ST=Wales, C=SE correct?
+	 *   [no]:  yes
+	 * 
+	 * Generating 2,048 bit RSA key pair and self-signed certificate (SHA256withRSA) with a validity of 10,000 days
+	 *     for: CN=Mr Test, OU=Testing Inc, O=Testing Org, L=Chicago, ST=Wales, C=SE
+	 * Enter key password for <the_alias>
+	 *     (RETURN if same as keystore password): ijklmnop  
+	 * Re-enter new password: ijklmnop
+	 * </pre>
+	 */
+	private final String keystorePath = getClass().getResource("/test.keystore").getFile();
 
 	@Test
 	public void testRead() throws Exception {
 		// Key password verification is optional:
 		for (String keypassword : new String[] { "abcdefgh", null }) {
-			KeyStore keyStore = KeyStoreFileManager.loadKeyStore(getClass().getResource("/test.keystore").getFile(),
+			KeyStore keyStore = KeyStoreFileManager.loadKeyStore(keystorePath,
 					keypassword == null ? null : keypassword.toCharArray());
 			Assert.assertNotNull(keyStore);
 			Assert.assertTrue(keyStore.containsAlias("the_alias"));
@@ -79,7 +83,6 @@ public class KeyStoreTest {
 
 	@Test
 	public void testSign() throws Exception {
-		String keystorePath = getClass().getResource("/test.keystore").getFile();
 		String alias = "the_alias";
 		char[] keyPasssword = "ijklmnop".toCharArray();
 		String inputFile = getClass().getResource("/simple_test.zip").getFile();
