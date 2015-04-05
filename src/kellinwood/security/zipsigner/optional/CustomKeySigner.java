@@ -12,6 +12,7 @@ public class CustomKeySigner {
 	public static void signZip(String keystorePath, char[] keystorePw, String certAlias, char[] certPw,
 			String signatureAlgorithm, String inputZipFilename, String outputZipFilename) throws Exception {
 		KeyStore keystore = KeyStoreFileManager.loadKeyStore(keystorePath, keystorePw);
+
 		X509Certificate publicKey = (X509Certificate) keystore.getCertificate(certAlias);
 		PrivateKey privateKey = (PrivateKey) keystore.getKey(certAlias, certPw);
 
