@@ -39,9 +39,8 @@ public class KeyStoreFileManager {
 	}
 
 	public static KeyStore loadKeyStore(String keystorePath, char[] password) throws Exception {
-		KeyStore ks = null;
 		try {
-			ks = new JksKeyStore();
+			KeyStore ks = new JksKeyStore();
 			try (FileInputStream fis = new FileInputStream(keystorePath)) {
 				ks.load(fis, password);
 			}
@@ -52,7 +51,7 @@ public class KeyStoreFileManager {
 			throw x;
 		} catch (Exception x) {
 			try {
-				ks = KeyStore.getInstance("bks", provider);
+				KeyStore ks = KeyStore.getInstance("bks", provider);
 				try (FileInputStream fis = new FileInputStream(keystorePath)) {
 					ks.load(fis, password);
 				}
@@ -101,25 +100,13 @@ public class KeyStoreFileManager {
 	static void copyFile(File srcFile, File destFile, boolean preserveFileDate) throws IOException {
 		if (destFile.exists() && destFile.isDirectory())
 			throw new IOException("Destination '" + destFile + "' exists but is a directory");
-		FileInputStream input = new FileInputStream(srcFile);
-		try {
-			FileOutputStream output = new FileOutputStream(destFile);
-			try {
+		try (FileInputStream input = new FileInputStream(srcFile)) {
+			try (FileOutputStream output = new FileOutputStream(destFile)) {
 				byte[] buffer = new byte[4096];
 				int n = 0;
 				while (-1 != (n = input.read(buffer))) {
 					output.write(buffer, 0, n);
 				}
-			} finally {
-				try {
-					output.close();
-				} catch (IOException x) {
-				} // Ignore
-			}
-		} finally {
-			try {
-				input.close();
-			} catch (IOException x) {
 			}
 		}
 
