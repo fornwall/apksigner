@@ -37,7 +37,6 @@ final class ZioEntryOutputStream extends OutputStream {
 
 	@Override
 	public void close() throws IOException {
-		downstream.flush();
 		downstream.close();
 		crcValue = (int) crc.getValue();
 	}
