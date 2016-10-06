@@ -6,12 +6,12 @@ import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.X509Certificate;
 
-import kellinwood.security.zipsigner.optional.CustomKeySigner;
-import kellinwood.security.zipsigner.optional.KeyStoreFileManager;
-import kellinwood.security.zipsigner.optional.LoadKeystoreException;
-
 import org.junit.Assert;
 import org.junit.Test;
+
+import kellinwood.security.zipsigner.optional.KeyStoreFileManager;
+import kellinwood.security.zipsigner.optional.LoadKeystoreException;
+import kellinwood.zipsigner.cmdline.Main;
 
 public class KeyStoreTest {
 
@@ -83,14 +83,11 @@ public class KeyStoreTest {
 
 	@Test
 	public void testSign() throws Exception {
-		String alias = "the_alias";
-		char[] keyPasssword = "ijklmnop".toCharArray();
 		String inputFile = getClass().getResource("/simple_test.zip").getFile();
 		File outputFile = new File(new File(inputFile).getParent(), "test_signed.jar");
 
 		try {
-			CustomKeySigner.signZip(keystorePath, null, alias, keyPasssword, "SHA1withRSA", inputFile,
-					outputFile.getAbsolutePath());
+			Main.main("--password", "ijklmnop", keystorePath, inputFile, outputFile.getAbsolutePath());
 
 			Process jarsignerProcess = Runtime.getRuntime().exec("jarsigner -verify " + outputFile.getAbsolutePath());
 			BufferedReader in = new BufferedReader(new InputStreamReader(jarsignerProcess.getInputStream()));

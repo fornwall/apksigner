@@ -1,169 +1,110 @@
-/*
- * Copyright (C) 2010 Ken Ellinwood
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package kellinwood.zipsigner.cmdline;
 
 import java.io.File;
-import java.net.URL;
 import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
-import java.util.Enumeration;
 import java.util.List;
-
-import kellinwood.security.zipsigner.ZipSigner;
-import kellinwood.security.zipsigner.optional.CustomKeySigner;
-import kellinwood.security.zipsigner.optional.KeyStoreFileManager;
 
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.MissingOptionException;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+
+import kellinwood.security.zipsigner.ZipSigner;
+import kellinwood.security.zipsigner.optional.CertCreator;
+import kellinwood.security.zipsigner.optional.KeyStoreFileManager;
 
 /** Sign files from the command line using zipsigner-lib. */
 public class Main {
 
 	static void usage(Options options) {
-		new HelpFormatter()
-				.printHelp(
-						140,
-						"Usage: jarsigner [options] jar-file alias",
-						"       jarsigner [options] jar-file [alias...]\n\n"
-								+ "REAL Usage: jarsigner [options] <input.zip> <output.zip>"
-								+ "Sign the input file and write the result to the given output file\n\n"
-								+ "Examples:\n\n"
-								+ "  java -jar zipsigner.jar input.zip output-signed.zip (signs in auto-testkey mode)\n\n"
-								+ "  java -jar zipsigner.jar -m <keyMode> input.zip output-signed.zip (signs in specified mode)\n\n"
-								+ "  java -jar zipsigner.jar -s <keystore file> input.zip output-signed.zip (signs with first key in the keystore)\n\n"
-								+ "  java -jar zipsigner.jar -s <keystore file> -a <key alias> input.zip output-signed.zip (signs with specified key in keystore)",
-						options, "");
+		new HelpFormatter().printHelp("apksigner [options] keystore input-apk output.apk",
+				"Signs an input APK file using the specified keystore to produce a signed and zipaligned output APK.",
+				options, "");
 		System.exit(1);
 	}
 
-	static char[] readPassword(String prompt) {
-		System.out.print(prompt + ": ");
-		System.out.flush();
-		return System.console().readPassword();
-	}
-
-	public static void main(String[] args) throws Exception {
+	public static void main(String... args) throws Exception {
 		Options options = new Options();
 		CommandLine cmdLine = null;
-		Option helpOption = new Option("h", "help", false, "Display usage information");
+		Option helpOption = new Option("h", "help", false, "Display usage information.");
 		options.addOption(helpOption);
 
-		Option keyOption = new Option("k", "key", false, "PCKS#8 encoded private key file");
-		keyOption.setArgs(1);
-		options.addOption(keyOption);
+		// Option storePasswordOption = new Option("s", "storepass", false, "password for keystore integrity");
+		// storePasswordOption.setArgs(1);
+		// options.addOption(storePasswordOption);
 
-		Option pwOption = new Option("p", "keypass", false, "Private key password");
-		pwOption.setArgs(1);
-		options.addOption(pwOption);
-
-		Option certOption = new Option("c", "cert", false, "X.509 public key certificate file");
-		certOption.setArgs(1);
-		options.addOption(certOption);
-
-		Option keystoreOption = new Option("s", "keystore", true, "Keystore file");
-		keystoreOption.setArgs(1);
-		options.addOption(keystoreOption);
-
-		Option aliasOption = new Option("a", "alias", true, "Alias for key/cert in the keystore");
-		aliasOption.setArgs(1);
-		options.addOption(aliasOption);
+		Option keyPasswordOption = new Option("p", "password", false, "Password for private key (default:android).");
+		keyPasswordOption.setArgs(1);
+		options.addOption(keyPasswordOption);
 
 		try {
 			cmdLine = new BasicParser().parse(options, args);
-		} catch (MissingOptionException x) {
-			System.out.println("One or more required options are missing: " + x.getMessage());
-			usage(options);
 		} catch (ParseException x) {
-			System.err.println(x.getClass().getSimpleName() + ": " + x.getMessage());
+			System.err.println(x.getMessage());
 			usage(options);
 		}
 
-		if (cmdLine.hasOption(helpOption.getOpt()))
+		if (cmdLine.hasOption(helpOption.getOpt())) {
 			usage(options);
+		}
 
 		@SuppressWarnings("unchecked")
 		List<String> argList = cmdLine.getArgList();
-		if (argList.size() != 2)
+		if (argList.size() != 3) {
 			usage(options);
-
-		PrivateKey privateKey = null;
-		if (cmdLine.hasOption(keyOption.getOpt())) {
-			if (!cmdLine.hasOption(certOption.getOpt())) {
-				System.out.println("Certificate file is required when specifying a private key");
-				usage(options);
-			}
-
-			String keypw = null;
-			if (cmdLine.hasOption(pwOption.getOpt()))
-				keypw = pwOption.getValue();
-			else {
-				keypw = new String(readPassword("Key password"));
-				if (keypw.equals(""))
-					keypw = null;
-			}
-			URL privateKeyUrl = new File(keyOption.getValue()).toURI().toURL();
-
-			privateKey = ZipSigner.readPrivateKey(privateKeyUrl, keypw);
 		}
 
-		X509Certificate cert = null;
-		if (cmdLine.hasOption(certOption.getOpt())) {
-			if (!cmdLine.hasOption(keyOption.getOpt())) {
-				System.out.println("Private key file is required when specifying a certificate");
-				usage(options);
-			}
-			URL certUrl = new File(certOption.getValue()).toURI().toURL();
-			cert = ZipSigner.readPublicKey(certUrl);
-		}
+		String keystorePath = argList.get(0);
+		String inputFile = argList.get(1);
+		String outputFile = argList.get(2);
 
-		if (cmdLine.hasOption(keyOption.getOpt())) {
-			ZipSigner.signZip(cert, privateKey, null, argList.get(0), argList.get(1));
-		} else if (cmdLine.hasOption((keystoreOption.getOpt()))) {
-			String keystorePath = cmdLine.getOptionValue(keystoreOption.getOpt());
-			String alias = null;
-			if (!cmdLine.hasOption(aliasOption.getOpt())) {
-				KeyStore keyStore = KeyStoreFileManager.loadKeyStore(keystorePath, (char[]) null);
-				for (Enumeration<String> e = keyStore.aliases(); e.hasMoreElements();) {
-					alias = e.nextElement();
-					System.out.println("Signing with alias: " + alias);
-					break;
-				}
+		// char[] storePassword;
+		// if (cmdLine.hasOption(storePasswordOption.getOpt())) {
+		// String optionValue = cmdLine.getOptionValue(storePasswordOption.getOpt());
+		// if (optionValue == null || optionValue.equals("")) {
+		// storePassword = null;
+		// } else {
+		// storePassword = optionValue.toCharArray();
+		// }
+		// } else {
+		// storePassword = null;
+		// }
+
+		char[] keyPassword;
+		if (cmdLine.hasOption(keyPasswordOption.getOpt())) {
+			String optionValue = cmdLine.getOptionValue(keyPasswordOption.getOpt());
+			if (optionValue == null || optionValue.equals("")) {
+				keyPassword = null;
 			} else {
-				alias = aliasOption.getValue();
+				keyPassword = optionValue.toCharArray();
 			}
-			String keypw = null;
-			if (cmdLine.hasOption(pwOption.getOpt()))
-				keypw = cmdLine.getOptionValue(pwOption.getOpt());
-			else {
-				keypw = new String(readPassword("Key password"));
-				if (keypw.equals(""))
-					keypw = null;
-			}
-
-			CustomKeySigner.signZip(keystorePath, null, alias, keypw.toCharArray(), "SHA1withRSA", argList.get(0),
-					argList.get(1));
 		} else {
-			System.err.println("No keystore given!");
+			keyPassword = "android".toCharArray();
 		}
+
+		File keystoreFile = new File(keystorePath);
+		if (!keystoreFile.exists()) {
+			String alias = "alias";
+			System.out.println("Creating new keystore (using '" + new String(keyPassword) + "' as password and '"
+					+ alias + "' as the key alias).");
+			CertCreator.DistinguishedNameValues nameValues = new CertCreator.DistinguishedNameValues();
+			nameValues.setCommonName("APK Signer");
+			nameValues.setOrganization("Earth");
+			nameValues.setOrganizationalUnit("Earth");
+			CertCreator.createKeystoreAndKey(keystorePath, keyPassword, "RSA", 2048, alias, keyPassword, "SHA1withRSA",
+					30, nameValues);
+		}
+
+		KeyStore keyStore = KeyStoreFileManager.loadKeyStore(keystorePath, null);
+		String alias = keyStore.aliases().nextElement();
+
+		X509Certificate publicKey = (X509Certificate) keyStore.getCertificate(alias);
+		PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, keyPassword);
+		ZipSigner.signZip(publicKey, privateKey, "SHA1withRSA", inputFile, outputFile);
 	}
 
 }

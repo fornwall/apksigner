@@ -29,25 +29,17 @@
 package kellinwood.security.zipsigner;
 
 import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.net.URL;
 import java.security.DigestOutputStream;
 import java.security.GeneralSecurityException;
-import java.security.Key;
-import java.security.KeyFactory;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.Security;
-import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.KeySpec;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -58,17 +50,13 @@ import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.regex.Pattern;
 
-import javax.crypto.Cipher;
-import javax.crypto.EncryptedPrivateKeyInfo;
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
+import org.spongycastle.jce.provider.BouncyCastleProvider;
 
+import kellinwood.security.zipsigner.optional.KeyStoreFileManager;
 import kellinwood.security.zipsigner.optional.SignatureBlockGenerator;
 import kellinwood.zipio.ZioEntry;
 import kellinwood.zipio.ZipInput;
 import kellinwood.zipio.ZipOutput;
-
-import org.spongycastle.jce.provider.BouncyCastleProvider;
 
 /**
  * This is a modified copy of com.android.signapk.SignApk.java. It provides an API to sign JAR files (including APKs and
@@ -79,7 +67,9 @@ import org.spongycastle.jce.provider.BouncyCastleProvider;
 public class ZipSigner {
 
 	static {
-		Security.insertProviderAt(new BouncyCastleProvider(), 1);
+		if (!KeyStoreFileManager.SECURITY_PROVIDER.getName().equals("SC")) {
+			throw new RuntimeException("Invalid security provider");
+		}
 	}
 
 	private static final String CERT_SF_NAME = "META-INF/CERT.SF";
@@ -88,80 +78,9 @@ public class ZipSigner {
 	// Files matching this pattern are not copied to the output.
 	private static final Pattern stripPattern = Pattern.compile("^META-INF/(.*)[.](SF|RSA|DSA)$");
 
-	public static X509Certificate readPublicKey(URL publicKeyUrl) throws IOException, GeneralSecurityException {
-		try (InputStream input = publicKeyUrl.openStream()) {
-			CertificateFactory cf = CertificateFactory.getInstance("X.509");
-			return (X509Certificate) cf.generateCertificate(input);
-		}
-	}
-
-	/**
-	 * Decrypt an encrypted PKCS 8 format private key.
-	 *
-	 * Based on ghstark's post on Aug 6, 2006 at http://forums.sun.com/thread.jspa?threadID=758133&messageID=4330949
-	 *
-	 * @param encryptedPrivateKey
-	 *            The raw data of the private key
-	 * @param keyPassword
-	 *            the key password
-	 */
-	private static KeySpec decryptPrivateKey(byte[] encryptedPrivateKey, String keyPassword)
-			throws GeneralSecurityException {
-		EncryptedPrivateKeyInfo epkInfo;
-		try {
-			epkInfo = new EncryptedPrivateKeyInfo(encryptedPrivateKey);
-		} catch (IOException ex) {
-			// Probably not an encrypted key.
-			return null;
-		}
-
-		char[] keyPasswd = keyPassword.toCharArray();
-
-		SecretKeyFactory skFactory = SecretKeyFactory.getInstance(epkInfo.getAlgName());
-		Key key = skFactory.generateSecret(new PBEKeySpec(keyPasswd));
-
-		Cipher cipher = Cipher.getInstance(epkInfo.getAlgName());
-		cipher.init(Cipher.DECRYPT_MODE, key, epkInfo.getAlgParameters());
-
-		try {
-			return epkInfo.getKeySpec(cipher);
-		} catch (InvalidKeySpecException ex) {
-			System.err.println("signapk: Password for private key may be bad.");
-			throw ex;
-		}
-	}
-
-	/** Fetch the content from the given stream and return it as a byte array. */
-	public static byte[] readContentAsBytes(InputStream input) throws IOException {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		byte[] buffer = new byte[4096];
-		int numRead;
-		while ((numRead = input.read(buffer)) != -1)
-			baos.write(buffer, 0, numRead);
-		return baos.toByteArray();
-	}
-
-	/** Read a PKCS 8 format private key. */
-	public static PrivateKey readPrivateKey(URL privateKeyUrl, String keyPassword) throws IOException,
-			GeneralSecurityException {
-		try (DataInputStream input = new DataInputStream(privateKeyUrl.openStream())) {
-			byte[] privateKeyBytes = readContentAsBytes(input);
-
-			KeySpec spec = decryptPrivateKey(privateKeyBytes, keyPassword);
-			if (spec == null)
-				spec = new PKCS8EncodedKeySpec(privateKeyBytes);
-
-			try {
-				return KeyFactory.getInstance("RSA").generatePrivate(spec);
-			} catch (InvalidKeySpecException ex) {
-				return KeyFactory.getInstance("DSA").generatePrivate(spec);
-			}
-		}
-	}
-
 	/** Add the SHA1 of every file to the manifest, creating it if necessary. */
-	private static Manifest addDigestsToManifest(Map<String, ZioEntry> entries) throws IOException,
-			GeneralSecurityException {
+	private static Manifest addDigestsToManifest(Map<String, ZioEntry> entries)
+			throws IOException, GeneralSecurityException {
 		Manifest input = null;
 		ZioEntry manifestEntry = entries.get(JarFile.MANIFEST_NAME);
 		if (manifestEntry != null) {

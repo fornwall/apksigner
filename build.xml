@@ -1,15 +1,31 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<project default="create_run_jar">
+<project default="create-jar">
 
-	<target name="download_libs">
-		<get src="https://repo1.maven.org/maven2/com/madgag/spongycastle/core/1.53.0.0/core-1.53.0.0.jar" dest="lib/spongcyastle-core.jar"/>
-		<get src="https://repo1.maven.org/maven2/com/madgag/spongycastle/prov/1.53.0.0/prov-1.53.0.0.jar" dest="lib/spongcyastle-prov.jar"/>
-		<get src="https://repo1.maven.org/maven2/com/madgag/spongycastle/pkix/1.53.0.0/pkix-1.53.0.0.jar" dest="lib/spongcyastle-pkix.jar"/>
+	<target name="download-libs">
+		<get src="https://repo1.maven.org/maven2/com/madgag/spongycastle/core/1.54.0.0/core-1.54.0.0.jar" dest="lib/spongcyastle-core.jar"/>
+		<get src="https://repo1.maven.org/maven2/com/madgag/spongycastle/prov/1.54.0.0/prov-1.54.0.0.jar" dest="lib/spongcyastle-prov.jar"/>
+		<get src="https://repo1.maven.org/maven2/com/madgag/spongycastle/pkix/1.54.0.0/pkix-1.54.0.0.jar" dest="lib/spongcyastle-pkix.jar"/>
 		<get src="https://repo1.maven.org/maven2/commons-cli/commons-cli/1.2/commons-cli-1.2.jar" dest="lib/commons-cli.jar"/>
 	</target>
 
-	<target name="create_run_jar">
-		<jar destfile="zipsigner.jar" filesetmanifest="mergewithoutmain">
+	<target name="compile">
+		<mkdir dir="bin"/>
+		<path id="compile.classpath">
+			<fileset dir="lib">
+				<include name="*.jar" />
+			</fileset>
+		</path>
+		<javac srcdir="src" destdir="bin" source="1.7" includeantruntime="false">
+			<classpath refid="compile.classpath" />
+		</javac>
+	</target>
+
+	<target name="clean">
+		<delete includeEmptyDirs="true"><fileset dir="bin"/></delete>
+	</target>
+
+	<target name="create-jar" depends="compile">
+		<jar destfile="apksigner.jar" filesetmanifest="mergewithoutmain">
 			<manifest>
 				<attribute name="Main-Class" value="kellinwood.zipsigner.cmdline.Main" />
 				<attribute name="Class-Path" value="." />

@@ -103,8 +103,8 @@ public class CertCreator {
 	}
 
 	/**
-	 * Creates a new key store and self-signed key. The key will have the same password as the key, and will be RSA 2048,
-	 * with the certificate signed using SHA1withRSA. The certificate will have a validity of 30 years).
+	 * Creates a new key store and self-signed key. The key will have the same password as the key, and will be RSA
+	 * 2048, with the certificate signed using SHA1withRSA. The certificate will have a validity of 30 years).
 	 *
 	 * @param storePath
 	 *            - pathname of the new key store file
@@ -128,7 +128,7 @@ public class CertCreator {
 			KeySet keySet = createKey(keyAlgorithm, keySize, keyName, certSignatureAlgorithm, certValidityYears,
 					distinguishedNameValues);
 
-			KeyStore privateKS = KeyStoreFileManager.createKeyStore(storePath, storePass);
+			KeyStore privateKS = KeyStoreFileManager.createKeyStore(storePass);
 			privateKS.setKeyEntry(keyName, keySet.privateKey, keyPass,
 					new java.security.cert.Certificate[] { keySet.publicKey });
 
@@ -147,8 +147,8 @@ public class CertCreator {
 	}
 
 	/** Create a new key and store it in an existing key store. */
-	public static KeySet createKey(String storePath, char[] storePass, String keyAlgorithm, int keySize,
-			String keyName, char[] keyPass, String certSignatureAlgorithm, int certValidityYears,
+	public static KeySet createKey(String storePath, char[] storePass, String keyAlgorithm, int keySize, String keyName,
+			char[] keyPass, String certSignatureAlgorithm, int certValidityYears,
 			DistinguishedNameValues distinguishedNameValues) {
 		try {
 			KeySet keySet = createKey(keyAlgorithm, keySize, keyName, certSignatureAlgorithm, certValidityYears,
@@ -187,13 +187,14 @@ public class CertCreator {
 			v3CertGen.setSerialNumber(serialNumber);
 			v3CertGen.setIssuerDN(principal);
 			v3CertGen.setNotBefore(new Date(System.currentTimeMillis() - 1000L * 60L * 60L * 24L * 30L));
-			v3CertGen.setNotAfter(new Date(System.currentTimeMillis()
-					+ (1000L * 60L * 60L * 24L * 366L * (long) certValidityYears)));
+			v3CertGen.setNotAfter(
+					new Date(System.currentTimeMillis() + (1000L * 60L * 60L * 24L * 366L * certValidityYears)));
 			v3CertGen.setSubjectDN(principal);
 			v3CertGen.setPublicKey(KPair.getPublic());
 			v3CertGen.setSignatureAlgorithm(certSignatureAlgorithm);
 
-			X509Certificate PKCertificate = v3CertGen.generate(KPair.getPrivate(), "BC");
+			X509Certificate PKCertificate = v3CertGen.generate(KPair.getPrivate(),
+					KeyStoreFileManager.SECURITY_PROVIDER.getName());
 			return new KeySet(PKCertificate, KPair.getPrivate(), null);
 		} catch (Exception x) {
 			throw new RuntimeException(x.getMessage(), x);

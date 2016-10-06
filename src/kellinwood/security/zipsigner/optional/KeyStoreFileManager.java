@@ -14,52 +14,32 @@ import org.spongycastle.jce.provider.BouncyCastleProvider;
 
 public class KeyStoreFileManager {
 
-	static final Provider provider = new BouncyCastleProvider();
+	public static final Provider SECURITY_PROVIDER = new BouncyCastleProvider();
 
 	static {
 		// Add the spongycastle version of the BC provider so that the implementation classes returned from the keystore
 		// are all from the spongycastle libs.
-		Security.addProvider(provider);
+		Security.addProvider(SECURITY_PROVIDER);
 	}
 
 	private static class JksKeyStore extends KeyStore {
 		public JksKeyStore() {
-			super(new JKS(), provider, "jks");
+			super(new JKS(), SECURITY_PROVIDER, "jks");
 		}
 	}
 
-	public static KeyStore createKeyStore(String keystorePath, char[] password) throws Exception {
-		KeyStore ks = null;
-		if (keystorePath.toLowerCase().endsWith(".bks")) {
-			ks = KeyStore.getInstance("bks", new BouncyCastleProvider());
-		} else
-			ks = new JksKeyStore();
+	public static KeyStore createKeyStore(char[] password) throws Exception {
+		KeyStore ks = new JksKeyStore();
 		ks.load(null, password);
 		return ks;
 	}
 
 	public static KeyStore loadKeyStore(String keystorePath, char[] password) throws Exception {
-		try {
-			KeyStore ks = new JksKeyStore();
-			try (FileInputStream fis = new FileInputStream(keystorePath)) {
-				ks.load(fis, password);
-			}
-			return ks;
-		} catch (LoadKeystoreException x) {
-			// This type of exception is thrown when the keystore is a JKS keystore, but the file is malformed or the
-			// validity/password check failed. In this case don't bother to attempt loading it as a BKS keystore.
-			throw x;
-		} catch (Exception x) {
-			try {
-				KeyStore ks = KeyStore.getInstance("bks", provider);
-				try (FileInputStream fis = new FileInputStream(keystorePath)) {
-					ks.load(fis, password);
-				}
-				return ks;
-			} catch (Exception e) {
-				throw new RuntimeException("Failed to load keystore: " + e.getMessage(), e);
-			}
+		KeyStore ks = new JksKeyStore();
+		try (FileInputStream fis = new FileInputStream(keystorePath)) {
+			ks.load(fis, password);
 		}
+		return ks;
 	}
 
 	public static void writeKeyStore(KeyStore ks, String keystorePath, char[] password) throws Exception {
@@ -69,10 +49,9 @@ public class KeyStoreFileManager {
 				// I've had some trouble saving new versions of the key store file in which the file becomes
 				// empty/corrupt. Saving the new version to a new file and creating a backup of the old version.
 				File tmpFile = File.createTempFile(keystoreFile.getName(), null, keystoreFile.getParentFile());
-				FileOutputStream fos = new FileOutputStream(tmpFile);
-				ks.store(fos, password);
-				fos.flush();
-				fos.close();
+				try (FileOutputStream fos = new FileOutputStream(tmpFile)) {
+					ks.store(fos, password);
+				}
 				/*
 				 * create a backup of the previous version int i = 1; File backup = new File( keystorePath + "." + i +
 				 * ".bak"); while (backup.exists()) { i += 1; backup = new File( keystorePath + "." + i + ".bak"); }
@@ -80,17 +59,16 @@ public class KeyStoreFileManager {
 				 */
 				renameTo(tmpFile, keystoreFile);
 			} else {
-				FileOutputStream fos = new FileOutputStream(keystorePath);
-				ks.store(fos, password);
-				fos.close();
+				try (FileOutputStream fos = new FileOutputStream(keystorePath)) {
+					ks.store(fos, password);
+				}
 			}
 		} catch (Exception x) {
 			try {
 				File logfile = File.createTempFile("zipsigner-error", ".log", keystoreFile.getParentFile());
-				PrintWriter pw = new PrintWriter(new FileWriter(logfile));
-				x.printStackTrace(pw);
-				pw.flush();
-				pw.close();
+				try (PrintWriter pw = new PrintWriter(new FileWriter(logfile))) {
+					x.printStackTrace(pw);
+				}
 			} catch (Exception y) {
 			}
 			throw x;
