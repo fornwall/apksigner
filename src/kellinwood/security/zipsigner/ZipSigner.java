@@ -262,7 +262,7 @@ public class ZipSigner {
 		try (ZipInput input = new ZipInput(inputZipFilename)) {
 			try (ZipOutput zipOutput = new ZipOutput(new FileOutputStream(outputZipFilename))) {
 				// Assume the certificate is valid for at least an hour.
-				long timestamp = keySet.publicKey.getNotBefore().getTime() + 3600L * 1000;
+				long timestamp = publicKey.getNotBefore().getTime() + 3600L * 1000;
 
 				// MANIFEST.MF
 				Manifest manifest = addDigestsToManifest(input.entries);
