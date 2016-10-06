@@ -1,32 +1,4 @@
-/*
- * Copyright (C) 2010 Ken Ellinwood
- * Copyright (C) 2008 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
-/* This file is a heavily modified version of com.android.signapk.SignApk.java.
- * The changes include:
- *   - addition of the signZip() convenience methods
- *   - addition of a progress listener interface
- *   - removal of main()
- *   - switch to a signature generation method that verifies
- *     in Android recovery
- *   - eliminated dependency on sun.security and sun.misc APIs by 
- *     using signature block template files.
- */
-
-package kellinwood.security.zipsigner;
+package net.fornwall.apksigner;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -49,17 +21,13 @@ import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.regex.Pattern;
 
-import kellinwood.security.zipsigner.optional.KeyStoreFileManager;
-import kellinwood.security.zipsigner.optional.SignatureBlockGenerator;
-import kellinwood.zipio.ZioEntry;
-import kellinwood.zipio.ZipInput;
-import kellinwood.zipio.ZipOutput;
+import net.fornwall.apksigner.zipio.ZioEntry;
+import net.fornwall.apksigner.zipio.ZipInput;
+import net.fornwall.apksigner.zipio.ZipOutput;
 
 /**
  * This is a modified copy of com.android.signapk.SignApk.java. It provides an API to sign JAR files (including APKs and
  * Zip/OTA updates) in a way compatible with the mincrypt verifier, using SHA1 and RSA keys.
- *
- * Please see the README.txt file in the root of this project for usage instructions.
  */
 public class ZipSigner {
 

@@ -1,4 +1,4 @@
-package kellinwood.zipio;
+package net.fornwall.apksigner.zipio;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<project default="create-jar">
+<project default="create-executable">
 
 	<target name="download-libs">
 		<get src="https://repo1.maven.org/maven2/com/madgag/spongycastle/core/1.54.0.0/core-1.54.0.0.jar" dest="lib/spongcyastle-core.jar"/>
@@ -27,7 +27,7 @@
 	<target name="create-jar" depends="compile">
 		<jar destfile="apksigner.jar" filesetmanifest="mergewithoutmain">
 			<manifest>
-				<attribute name="Main-Class" value="kellinwood.zipsigner.cmdline.Main" />
+				<attribute name="Main-Class" value="net.fornwall.apksigner.Main" />
 				<attribute name="Class-Path" value="." />
 			</manifest>
 			<fileset dir="bin/" />
@@ -37,4 +37,15 @@
 			<zipfileset excludes="META-INF/*.SF" src="lib/commons-cli.jar" />
 		</jar>
 	</target>
+
+	<target name="create-executable" depends="create-jar">
+		<concat destfile="apksigner" binary="true">
+			<filelist>
+				<file name="stub.sh" />
+				<file name="apksigner.jar" />
+			</filelist>
+		</concat>
+		<chmod file="apksigner" perm="a+x" />
+	</target>
+
 </project>

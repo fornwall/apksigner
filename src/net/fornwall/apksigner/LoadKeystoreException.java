@@ -1,4 +1,4 @@
-package kellinwood.security.zipsigner.optional;
+package net.fornwall.apksigner;
 
 import java.io.IOException;
 

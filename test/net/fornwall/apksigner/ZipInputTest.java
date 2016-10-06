@@ -1,3 +1,4 @@
+package net.fornwall.apksigner;
 import static org.junit.Assert.assertEquals;
 
 import java.text.SimpleDateFormat;
@@ -5,10 +6,10 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 
-import kellinwood.zipio.ZioEntry;
-import kellinwood.zipio.ZipInput;
-
 import org.junit.Test;
+
+import net.fornwall.apksigner.zipio.ZioEntry;
+import net.fornwall.apksigner.zipio.ZipInput;
 
 public class ZipInputTest {
 

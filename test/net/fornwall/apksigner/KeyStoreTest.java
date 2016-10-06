@@ -1,3 +1,4 @@
+package net.fornwall.apksigner;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.InputStreamReader;
@@ -9,9 +10,9 @@ import java.security.cert.X509Certificate;
 import org.junit.Assert;
 import org.junit.Test;
 
-import kellinwood.security.zipsigner.optional.KeyStoreFileManager;
-import kellinwood.security.zipsigner.optional.LoadKeystoreException;
-import kellinwood.zipsigner.cmdline.Main;
+import net.fornwall.apksigner.KeyStoreFileManager;
+import net.fornwall.apksigner.LoadKeystoreException;
+import net.fornwall.apksigner.Main;
 
 public class KeyStoreTest {
 

@@ -1,4 +1,4 @@
-package kellinwood.zipsigner.cmdline;
+package net.fornwall.apksigner;
 
 import java.io.File;
 import java.security.KeyStore;
@@ -12,10 +12,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-
-import kellinwood.security.zipsigner.ZipSigner;
-import kellinwood.security.zipsigner.optional.CertCreator;
-import kellinwood.security.zipsigner.optional.KeyStoreFileManager;
 
 /** Sign files from the command line using zipsigner-lib. */
 public class Main {

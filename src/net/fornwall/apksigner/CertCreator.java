@@ -1,4 +1,4 @@
-package kellinwood.security.zipsigner.optional;
+package net.fornwall.apksigner;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,8 +12,6 @@ import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Vector;
-
-import kellinwood.security.zipsigner.KeySet;
 
 import org.spongycastle.asn1.ASN1ObjectIdentifier;
 import org.spongycastle.asn1.x500.style.BCStyle;

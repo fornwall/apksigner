@@ -1,6 +1,11 @@
-android-jarsigner
-=================
+apksigner
+=========
+A lightweight APK signing tool that can be run on Android devices.
 
-Getting jarsigner-like functionality on android.
+Usage
+=====
+Run as `apksigner [-p password] keystore input-apk output-apk`. This will use the specified keystore (or creating one if necessary) to create a signed and zipaligned output file.
 
-Stripped down code from https://code.google.com/p/zip-signer/ - not yet ready to use.
+License
+=======
+[Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0). Based on [zip-signer](https://code.google.com/p/zip-signer/) by Ken Ellinwood.

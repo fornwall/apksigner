@@ -1,3 +1,4 @@
+package net.fornwall.apksigner;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
@@ -8,14 +9,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import kellinwood.zipio.ZioEntry;
-import kellinwood.zipio.ZipInput;
-import kellinwood.zipio.ZipOutput;
-
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import net.fornwall.apksigner.zipio.ZioEntry;
+import net.fornwall.apksigner.zipio.ZipInput;
+import net.fornwall.apksigner.zipio.ZipOutput;
 
 public class CreateZipFileTest {
 

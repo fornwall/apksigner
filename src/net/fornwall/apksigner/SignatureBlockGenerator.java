@@ -1,6 +1,4 @@
-package kellinwood.security.zipsigner.optional;
-
-import kellinwood.security.zipsigner.KeySet;
+package net.fornwall.apksigner;
 
 import org.spongycastle.cert.jcajce.JcaCertStore;
 import org.spongycastle.cms.*;
