@@ -1,0 +1,26 @@
+.Dd 2016-10-07
+.Dt APKSIGNER 1
+.Sh NAME
+.Nm apksigner
+.Nd APK signing tool
+.Sh SYNOPSIS
+.Nm apksigner
+.Bk -words
+.Op Fl p Ar password
+.Ar keystore input-apk output-apk
+.Ek
+.Sh DESCRIPTION
+The
+.Nm apksigner
+tool produces a signed and zipaligned output APK given a keystore and unsigned input APK.
+.Pp
+If the keystore does not exist one will be created using 'alias' as the keystore alias and the same password for both the keystore and key.
+.Pp
+The options are as follows:
+.Bl -tag -width Ds
+.It Fl p Ar password , Fl Fl password Ns = Ns Ar password
+The password for the key. Uses 'android' as default value if not specified.
+.El
+.Pp
+.Sh AUTHOR
+.An Fredrik Fornwall Aq Mt fredrik@fornwall.net
