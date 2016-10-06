@@ -2,7 +2,6 @@
 bin/
 
 # Package Files #
-*.jar
 *.apk
 *.war
 *.dex
