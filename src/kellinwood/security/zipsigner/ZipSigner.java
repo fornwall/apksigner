@@ -38,7 +38,6 @@ import java.security.DigestOutputStream;
 import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
-import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,8 +48,6 @@ import java.util.jar.Attributes;
 import java.util.jar.JarFile;
 import java.util.jar.Manifest;
 import java.util.regex.Pattern;
-
-import org.spongycastle.jce.provider.BouncyCastleProvider;
 
 import kellinwood.security.zipsigner.optional.KeyStoreFileManager;
 import kellinwood.security.zipsigner.optional.SignatureBlockGenerator;

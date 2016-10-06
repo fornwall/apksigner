@@ -102,30 +102,11 @@ public class CertCreator {
 		}
 	}
 
-	/**
-	 * Creates a new key store and self-signed key. The key will have the same password as the key, and will be RSA
-	 * 2048, with the certificate signed using SHA1withRSA. The certificate will have a validity of 30 years).
-	 *
-	 * @param storePath
-	 *            - pathname of the new key store file
-	 * @param password
-	 *            - key store and key password
-	 * @param keyName
-	 *            - the new key will have this as its alias within the key store
-	 * @param distinguishedNameValues
-	 *            - contains Country, State, Locality,...,Common Name, etc.
-	 */
-	public static void createKeystoreAndKey(String storePath, char[] password, String keyName,
-			DistinguishedNameValues distinguishedNameValues) {
-		createKeystoreAndKey(storePath, password, "RSA", 2048, keyName, password, "SHA1withRSA", 30,
-				distinguishedNameValues);
-	}
-
 	public static KeySet createKeystoreAndKey(String storePath, char[] storePass, String keyAlgorithm, int keySize,
 			String keyName, char[] keyPass, String certSignatureAlgorithm, int certValidityYears,
 			DistinguishedNameValues distinguishedNameValues) {
 		try {
-			KeySet keySet = createKey(keyAlgorithm, keySize, keyName, certSignatureAlgorithm, certValidityYears,
+			KeySet keySet = createKey(keyAlgorithm, keySize, certSignatureAlgorithm, certValidityYears,
 					distinguishedNameValues);
 
 			KeyStore privateKS = KeyStoreFileManager.createKeyStore(storePass);
@@ -146,31 +127,7 @@ public class CertCreator {
 		}
 	}
 
-	/** Create a new key and store it in an existing key store. */
-	public static KeySet createKey(String storePath, char[] storePass, String keyAlgorithm, int keySize, String keyName,
-			char[] keyPass, String certSignatureAlgorithm, int certValidityYears,
-			DistinguishedNameValues distinguishedNameValues) {
-		try {
-			KeySet keySet = createKey(keyAlgorithm, keySize, keyName, certSignatureAlgorithm, certValidityYears,
-					distinguishedNameValues);
-
-			KeyStore privateKS = KeyStoreFileManager.loadKeyStore(storePath, storePass);
-
-			privateKS.setKeyEntry(keyName, keySet.privateKey, keyPass,
-					new java.security.cert.Certificate[] { keySet.publicKey });
-
-			KeyStoreFileManager.writeKeyStore(privateKS, storePath, storePass);
-
-			return keySet;
-
-		} catch (RuntimeException x) {
-			throw x;
-		} catch (Exception x) {
-			throw new RuntimeException(x.getMessage(), x);
-		}
-	}
-
-	public static KeySet createKey(String keyAlgorithm, int keySize, String keyName, String certSignatureAlgorithm,
+	private static KeySet createKey(String keyAlgorithm, int keySize, String certSignatureAlgorithm,
 			int certValidityYears, DistinguishedNameValues distinguishedNameValues) {
 		try {
 			KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance(keyAlgorithm);
