@@ -3,6 +3,7 @@ package net.fornwall.apksigner;
 import java.io.File;
 import java.security.KeyStore;
 import java.security.PrivateKey;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.X509Certificate;
 import java.util.List;
 
@@ -29,10 +30,6 @@ public class Main {
 		Option helpOption = new Option("h", "help", false, "Display usage information.");
 		options.addOption(helpOption);
 
-		// Option storePasswordOption = new Option("s", "storepass", false, "password for keystore integrity");
-		// storePasswordOption.setArgs(1);
-		// options.addOption(storePasswordOption);
-
 		Option keyPasswordOption = new Option("p", "password", false, "Password for private key (default:android).");
 		keyPasswordOption.setArgs(1);
 		options.addOption(keyPasswordOption);
@@ -57,18 +54,6 @@ public class Main {
 		String keystorePath = argList.get(0);
 		String inputFile = argList.get(1);
 		String outputFile = argList.get(2);
-
-		// char[] storePassword;
-		// if (cmdLine.hasOption(storePasswordOption.getOpt())) {
-		// String optionValue = cmdLine.getOptionValue(storePasswordOption.getOpt());
-		// if (optionValue == null || optionValue.equals("")) {
-		// storePassword = null;
-		// } else {
-		// storePassword = optionValue.toCharArray();
-		// }
-		// } else {
-		// storePassword = null;
-		// }
 
 		char[] keyPassword;
 		if (cmdLine.hasOption(keyPasswordOption.getOpt())) {
@@ -99,8 +84,13 @@ public class Main {
 		String alias = keyStore.aliases().nextElement();
 
 		X509Certificate publicKey = (X509Certificate) keyStore.getCertificate(alias);
-		PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, keyPassword);
-		ZipSigner.signZip(publicKey, privateKey, "SHA1withRSA", inputFile, outputFile);
+		try {
+			PrivateKey privateKey = (PrivateKey) keyStore.getKey(alias, keyPassword);
+			ZipSigner.signZip(publicKey, privateKey, "SHA1withRSA", inputFile, outputFile);
+		} catch (UnrecoverableKeyException e) {
+			System.err.println("apksigner: Invalid key password.");
+			System.exit(1);
+		}
 	}
 
 }
