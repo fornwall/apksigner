@@ -15,7 +15,7 @@
 				<include name="*.jar" />
 			</fileset>
 		</path>
-		<javac srcdir="src" destdir="bin" source="1.7" includeantruntime="false">
+		<javac srcdir="src" destdir="bin" source="1.7" target="1.7" includeantruntime="false">
 			<classpath refid="compile.classpath" />
 		</javac>
 	</target>
