@@ -20,7 +20,7 @@ public class Main {
 	static void usage(Options options) {
 		new HelpFormatter().printHelp("apksigner [-p password] keystore input-apk output-apk",
 				"Sign an input APK file using the specified keystore to produce a signed and zipaligned output APK." +
-						"The keystore file will be created with the specified password if it does not exist.",
+						" The keystore file will be created with the specified password if it does not exist. Options:",
 				options, "");
 		System.exit(1);
 	}
