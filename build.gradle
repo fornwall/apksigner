@@ -1,0 +1,46 @@
+defaultTasks 'executable'
+
+repositories {
+	jcenter()
+}
+
+apply plugin: 'java'
+
+dependencies {
+	compile 'commons-cli:commons-cli:1.4'
+	compile 'com.madgag.spongycastle:bcpkix-jdk15on:1.56.0.0'
+	testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+// Create a single Jar with all dependencies
+task fatJar(type: Jar) {
+	manifest {
+		attributes (
+			'Main-Class': 'net.fornwall.apksigner.Main'
+		)
+	}
+	baseName = project.name + '-all'
+	from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+	with jar
+}
+
+task executable(dependsOn: ':fatJar') {
+	doLast {
+		exec {
+			commandLine 'sh', '-c', 'cat stub.sh ' + fatJar.archivePath + ' > ' + BINARY_NAME
+		}
+		exec {
+			commandLine 'chmod', '+x', BINARY_NAME
+		}
+		println 'Runnable file ' + BINARY_NAME +' created!'
+	}
+	clean {
+	    delete BINARY_NAME
+	}
+}
+
+test {
+	afterTest { desc, result ->
+		println "Test ${desc.name} [${desc.className}] result: ${result.resultType}"
+	}
+}
