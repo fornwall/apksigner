@@ -16,7 +16,7 @@ dependencies {
 task fatJar(type: Jar) {
 	manifest {
 		attributes (
-			'Main-Class': 'net.fornwall.apksigner.Main'
+			'Main-Class': MAIN_CLASS
 		)
 	}
 	baseName = project.name + '-all'
